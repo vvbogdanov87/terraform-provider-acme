@@ -1,0 +1,5 @@
+name: "acme" # Name is the provider name.
+address: "registry.terraform.io/vvbogdanov87/acme" # Address is the provider address for the Terraform registry.
+moduleName: "github.com/vvbogdanov87/terraform-provider-acme" # ModuleName is the name of the Go module.
+schemasDir: "schemas" # SchemasDir is the directory containing the CRD schemas.
+outputDir: "." # OutputDir is the directory to write the generated provider code.
