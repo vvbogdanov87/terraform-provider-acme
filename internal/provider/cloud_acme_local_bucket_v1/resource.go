@@ -84,10 +84,12 @@ func (r *tfResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp 
 				Description: "Spec is the specification of a resource.",
 				Required:    true,
 				Attributes: map[string]schema.Attribute{
-					"region": schema.StringAttribute{
+					"tags": schema.MapAttribute{
 						Required: false,
 						Optional: true,
 						Computed: false,
+
+						ElementType: types.StringType,
 					},
 				},
 			},

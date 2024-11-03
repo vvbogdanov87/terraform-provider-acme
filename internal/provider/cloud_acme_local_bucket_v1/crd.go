@@ -19,7 +19,7 @@ type K8sCR struct {
 }
 
 type K8sSpec struct {
-	Region string `tfsdk:"region" json:"region"`
+	Tags map[string]string `tfsdk:"tags" json:"tags"`
 }
 
 type K8sStatus struct {

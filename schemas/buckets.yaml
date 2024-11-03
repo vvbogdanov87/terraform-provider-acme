@@ -46,8 +46,10 @@ spec:
           spec:
             description: BucketSpec defines the desired state of Bucket
             properties:
-              region:
-                type: string
+              tags:
+                additionalProperties:
+                  type: string
+                type: object
             type: object
           status:
             description: BucketStatus defines the observed state of Bucket

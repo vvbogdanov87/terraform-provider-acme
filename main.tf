@@ -14,7 +14,9 @@ resource "acme_bucket" "bucket" {
   name = "acme-test-bucket-123"
 
   spec = {
-      region = "us-west-2"
+    tags = {
+      "env" = "dev"
+    }
   }
 }
 
