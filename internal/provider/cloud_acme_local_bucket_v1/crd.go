@@ -13,6 +13,7 @@ type K8sCR struct {
 	Name            types.String   `tfsdk:"name" json:"-"`
 	Timeouts        timeouts.Value `tfsdk:"timeouts" json:"-"`
 	ResourceVersion types.String   `tfsdk:"resource_version" json:"-"`
+	Finalizer       types.String   `tfsdk:"finalizer" json:"-"`
 
 	Spec   *K8sSpec   `tfsdk:"spec" json:"spec,omitempty"`
 	Status *K8sStatus `tfsdk:"status" json:"status"`

@@ -78,6 +78,12 @@ func (r *tfResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp 
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
+			"finalizer": schema.StringAttribute{
+				Computed: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
 
 			// Custom arguments
 			"spec": schema.SingleNestedAttribute{
@@ -177,6 +183,10 @@ func (r *tfResource) Create(ctx context.Context, req resource.CreateRequest, res
 
 	// ResourceVersion is required to properly update resources after creation.
 	cr.ResourceVersion = types.StringValue(cr.Metadata.ResourceVersion)
+
+	// Set finalizer
+	cr.Finalizer = types.StringValue(cr.Metadata.Finalizers[0])
+
 	// We need to populate TF schema specific fields.
 	cr.Name = plan.Name
 	cr.Timeouts = plan.Timeouts
@@ -219,6 +229,10 @@ func (r *tfResource) Read(ctx context.Context, req resource.ReadRequest, resp *r
 
 	// ResourceVersion is required to properly update resources after creation.
 	cr.ResourceVersion = types.StringValue(cr.Metadata.ResourceVersion)
+
+	// Set finalizer
+	cr.Finalizer = types.StringValue(cr.Metadata.Finalizers[0])
+
 	// We need to populate TF schema specific fields.
 	cr.Name = state.Name
 	cr.Timeouts = state.Timeouts
@@ -243,6 +257,8 @@ func (r *tfResource) Update(ctx context.Context, req resource.UpdateRequest, res
 	resp.Diagnostics.Append(diags...)
 	diags = req.Plan.GetAttribute(ctx, path.Root("resource_version"), &plan.ResourceVersion)
 	resp.Diagnostics.Append(diags...)
+	diags = req.Plan.GetAttribute(ctx, path.Root("finalizer"), &plan.Finalizer)
+	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -253,6 +269,7 @@ func (r *tfResource) Update(ctx context.Context, req resource.UpdateRequest, res
 		Name: plan.Name.ValueString(),
 		// ResourceVersion is required to update a resource.
 		ResourceVersion: plan.ResourceVersion.ValueString(),
+		Finalizers:      []string{plan.Finalizer.ValueString()},
 	}
 
 	// Get timeout
@@ -318,6 +335,10 @@ func (r *tfResource) Update(ctx context.Context, req resource.UpdateRequest, res
 	// This is required to avoid errors when populating the state.
 	// A new ResourceVersion will be read before updating anyway.
 	cr.ResourceVersion = plan.ResourceVersion
+
+	// Set finalizer
+	cr.Finalizer = types.StringValue(cr.Metadata.Finalizers[0])
+
 	// We need to populate TF schema specific fields.
 	cr.Name = plan.Name
 	cr.Timeouts = plan.Timeouts
