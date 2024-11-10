@@ -159,7 +159,7 @@ func (r *tfResource) Create(ctx context.Context, req resource.CreateRequest, res
 		FieldValidation: "Strict",
 	}
 
-	_, err = r.client.
+	tmpRes, err := r.client.
 		Resource(k8sSchema.GroupVersionResource{Group: "cloud.acme.local", Version: "v1", Resource: "buckets"}).
 		Namespace(r.namespace).
 		Patch(ctx, plan.Name.ValueString(), k8sTypes.ApplyPatchType, body, patchOptions)
@@ -172,7 +172,7 @@ func (r *tfResource) Create(ctx context.Context, req resource.CreateRequest, res
 	}
 
 	// wait for resource becomes READY
-	cr, err := r.waitReady(ctx, plan.Name.ValueString(), createTimeout)
+	cr, err := r.waitReady(ctx, plan.Name.ValueString(), tmpRes.GetResourceVersion(), createTimeout)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Waiting resource READY",
@@ -299,7 +299,7 @@ func (r *tfResource) Update(ctx context.Context, req resource.UpdateRequest, res
 		return
 	}
 
-	_, err = r.client.
+	tmpRes, err := r.client.
 		Resource(k8sSchema.GroupVersionResource{Group: "cloud.acme.local", Version: "v1", Resource: "buckets"}).
 		Namespace(r.namespace).
 		Update(ctx, unstructuredObj, metav1.UpdateOptions{})
@@ -311,11 +311,8 @@ func (r *tfResource) Update(ctx context.Context, req resource.UpdateRequest, res
 		return
 	}
 
-	// After resource is updated, k8s controller changes Ready status to False while underliying resources(eg s3 bucket) are being updated.
-	// It takes some time to controller to change Ready status to False so we need to wait for it.
-	time.Sleep(500 * time.Millisecond)
 	// wait for Rady status to be True
-	cr, err := r.waitReady(ctx, plan.Name.ValueString(), updateTimeout)
+	cr, err := r.waitReady(ctx, plan.Name.ValueString(), tmpRes.GetResourceVersion(), updateTimeout)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Waiting resource READY",
@@ -457,13 +454,17 @@ func (r *tfResource) getResource(ctx context.Context, name string) (*K8sCR, erro
 	return &manifest, nil
 }
 
-func (r *tfResource) waitReady(ctx context.Context, name string, timeout time.Duration) (*K8sCR, error) {
+func (r *tfResource) waitReady(ctx context.Context, name, resourceVersion string, timeout time.Duration) (*K8sCR, error) {
 	var cr *K8sCR
 	err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		var err error
 		cr, err = r.getResource(ctx, name)
 		if err != nil {
 			return retry.RetryableError(fmt.Errorf("getting resource: %w", err))
+		}
+
+		if cr.Metadata.ResourceVersion == resourceVersion {
+			return retry.RetryableError(fmt.Errorf("resource is not updated"))
 		}
 
 		if cr.Status == nil || cr.Status.Conditions == nil {
